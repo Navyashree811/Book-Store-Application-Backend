@@ -21,4 +21,6 @@ public interface IUserService {
 
 	LoginResponse login(LoginDto logindto) throws UserException;
 
+	boolean deleteUser(String token) throws UserNotFoundException;
+
 }

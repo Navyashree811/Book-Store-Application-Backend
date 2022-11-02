@@ -1,6 +1,10 @@
 package com.bridgelabz.bookstore.dto;
 
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.validation.constraints.Pattern;
+
+import com.bridgelabz.bookstore.enums.RoleType;
 
 import lombok.Data;
 
@@ -21,5 +25,8 @@ public class RegistrationDto {
 	private String emailId;
 
 	private long otp;
+
+	@Enumerated(value = EnumType.STRING)
+	private RoleType roleType;
 
 }

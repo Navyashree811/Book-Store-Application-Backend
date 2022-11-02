@@ -13,6 +13,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 
@@ -30,7 +31,6 @@ public class UserModel {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "user_id")
 	private long userId;
 
 	private String firstName;
@@ -64,14 +64,5 @@ public class UserModel {
 
 	@CreationTimestamp
 	public LocalDateTime expiryDate;
-
-	@ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-	@JoinTable(name = "userbooks", joinColumns = { @JoinColumn(name = "user_id") }, inverseJoinColumns = {
-			@JoinColumn(name = "book_id") })
-	private List<BookModel> book;
-
-	@ManyToMany(cascade = CascadeType.ALL)
-	@JoinColumn(name = "book_Id")
-	private List<BookModel> books;
 
 }

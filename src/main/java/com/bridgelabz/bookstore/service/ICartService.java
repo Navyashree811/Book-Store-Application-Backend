@@ -12,7 +12,7 @@ import com.bridgelabz.bookstore.response.Response;
 @Component
 public interface ICartService {
 
-	Response addToCart(CartDto cartDto, Long bookId, String token);
+	Response addToCart(CartDto cartDto, String token) throws Exception;
 
 	Response removeItem(Long cartId) throws BookException;
 

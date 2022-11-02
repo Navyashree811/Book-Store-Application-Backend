@@ -13,15 +13,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
 	@ExceptionHandler(UserException.class)
 	public final ResponseEntity<ExceptionResponse> userException(UserException ex) {
-		
+
 		ExceptionResponse exp = new ExceptionResponse();
 		exp.setMessage(ex.getMessage());
 		exp.setStatusCode(ex.getStatusCode());
 		exp.setData(ex.getData());
-	
+
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(exp);
 
 	}
+
 	@ExceptionHandler(BookException.class)
 	public final ResponseEntity<ExceptionResponse> bookException(BookException ex) {
 
@@ -29,6 +30,28 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		exp.setMessage(ex.getMessage());
 		exp.setStatusCode(ex.getStatusCode());
 		exp.setData(ex.getData());
+
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(exp);
+
+	}
+
+	@ExceptionHandler(CartException.class)
+	public final ResponseEntity<ExceptionResponse> cartException(CartException ex) {
+
+		ExceptionResponse exp = new ExceptionResponse();
+		exp.setMessage(ex.getMessage());
+		exp.setStatusCode(ex.getStatusCode());
+		exp.setData(ex.getData());
+
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(exp);
+
+	}
+
+	@ExceptionHandler(UserNotFoundException.class)
+	public final ResponseEntity<ExceptionResponse> userNotFoundException(UserNotFoundException ex) {
+
+		ExceptionResponse exp = new ExceptionResponse();
+		exp.setMessage(ex.getMessage());
 
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(exp);
 

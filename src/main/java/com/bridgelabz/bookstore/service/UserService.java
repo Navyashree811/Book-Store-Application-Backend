@@ -22,6 +22,9 @@ import com.bridgelabz.bookstore.utility.JwtToken;
 public class UserService implements IUserService {
 
 	@Autowired
+	AdminRepository adminRepository;
+
+	@Autowired
 	private BCryptPasswordEncoder bCryptPasswordEncoder;
 
 	@Autowired
@@ -39,26 +42,87 @@ public class UserService implements IUserService {
 	@Override
 	public boolean register(RegistrationDto registrationDto) throws UserException {
 		UserModel user = userRepository.findByEmailId(registrationDto.getEmailId());
-		if (user != null) {
-			throw new UserException("Registration Failed!", HttpStatus.FORBIDDEN.value());
-		}
-		UserModel userDetails = new UserModel();
-		BeanUtils.copyProperties(registrationDto, userDetails);
-		userDetails.setPassword(bCryptPasswordEncoder.encode(userDetails.getPassword()));
-		userDetails.setDob(LocalDateTime.now());
-		userDetails.setRegisteredAt(LocalDateTime.now());
-		userDetails.setUpdatedAt(LocalDateTime.now());
-		userDetails.setPurchaseDate(LocalDateTime.now());
-		userDetails.setExpiryDate(LocalDateTime.now());
-		userRepository.save(userDetails);
-		UserModel sendMail = userRepository.findByEmailId(registrationDto.getEmailId());
-		String response = VERIFICATION_URL + JwtToken.createJWT(sendMail.getUserId());
-		System.out.println(response);
+		AdminModel admin = adminRepository.findByEmailId(registrationDto.getEmailId());
 
-		emailSender.sendEmail(registrationDto.getEmailId(), "Registration Link...",
-				"Link For Verification: " + response);
+		switch (registrationDto.getRoleType()) {
+		case USER:
+			if (user != null) {
+				throw new UserException("User Already Registered!", HttpStatus.FORBIDDEN.value());
+			}
+			UserModel userDetails = new UserModel();
+			BeanUtils.copyProperties(registrationDto, userDetails);
+			userDetails.setPassword(bCryptPasswordEncoder.encode(userDetails.getPassword()));
+			userDetails.setDob(LocalDateTime.now());
+			userDetails.setRegisteredAt(LocalDateTime.now());
+			userDetails.setUpdatedAt(LocalDateTime.now());
+			userDetails.setPurchaseDate(LocalDateTime.now());
+			userDetails.setExpiryDate(LocalDateTime.now());
+			userRepository.save(userDetails);
+			UserModel sendMail = userRepository.findByEmailId(registrationDto.getEmailId());
+			String response = VERIFICATION_URL + JwtToken.createJWT(sendMail.getUserId());
+			System.out.println(response);
+			emailSender.sendEmail(registrationDto.getEmailId(), "Registration Link...",
+					"Link For Verification: " + response);
+
+			break;
+
+		case ADMIN:
+			if (admin != null) {
+				throw new UserException("Admin Already Registered!", HttpStatus.FORBIDDEN.value());
+			}
+			AdminModel adminModel = new AdminModel();
+			adminModel.setFirstName(registrationDto.getFirstName());
+			adminModel.setLastName(registrationDto.getLastName());
+			adminModel.setEmailId(registrationDto.getEmailId());
+			adminModel.setPassword(bCryptPasswordEncoder.encode(registrationDto.getPassword()));
+			adminRepository.save(adminModel);
+
+			break;
+		}
+
 		return true;
 
+	}
+
+	@Override
+	public LoginResponse login(LoginDto loginDTO) throws UserException {
+		UserModel userCheck = userRepository.findByEmailId(loginDTO.getEmailId());
+		AdminModel adminCheck = adminRepository.findByEmailId(loginDTO.getEmailId());
+
+		switch (loginDTO.getRoleType()) {
+		case USER:
+
+			if (userCheck == null) {
+				throw new UserException("User! Please Register First!", HttpStatus.NOT_FOUND.value());
+			}
+			if (!userCheck.isVerify()) {
+				throw new UserException("Please Verified Your EmailId!", HttpStatus.BAD_REQUEST.value());
+			}
+
+			if (bCryptPasswordEncoder.matches(loginDTO.getPassword(), userCheck.getPassword())) {
+				String token = JwtToken.createJWT(userCheck.getUserId());
+				userRepository.save(userCheck);
+				return new LoginResponse("Hi " + userCheck.getFirstName(), token, HttpStatus.OK.value(),
+						"Login Successfully");
+			}
+			break;
+
+		case ADMIN:
+			if (adminCheck == null) {
+				throw new UserException("Admin! Please Register First!", HttpStatus.NOT_FOUND.value());
+			}
+
+			if (bCryptPasswordEncoder.matches(loginDTO.getPassword(), adminCheck.getPassword())) {
+				String token = JwtToken.createJWT(adminCheck.getAdminId());
+				adminRepository.save(adminCheck);
+				return new LoginResponse("Hi " + adminCheck.getFirstName(), token, HttpStatus.OK.value(),
+						"Login Successfully");
+			}
+
+			break;
+		}
+
+		throw new UserException("Invalid Credential, Try Again!", HttpStatus.FORBIDDEN.value());
 	}
 
 	@Override
@@ -105,24 +169,16 @@ public class UserService implements IUserService {
 	}
 
 	@Override
-	public LoginResponse login(LoginDto loginDTO) throws UserException {
-		UserModel userCheck = userRepository.findByEmailId(loginDTO.getEmailId());
+	public boolean deleteUser(String token) throws UserNotFoundException {
+		long id = JwtToken.decodeJWT(token);
+		UserModel isIdAvailable = userRepository.findByUserId(id);
 
-		if (userCheck == null) {
-			throw new UserException("Please Register First!", HttpStatus.NOT_FOUND.value());
+		if (isIdAvailable != null) {
+			userRepository.deleteById(id);
+			return true;
 		}
-		if (!userCheck.isVerify()) {
-			throw new UserException("Please Verified Your EmailId!", HttpStatus.BAD_REQUEST.value());
-		}
+		throw new UserNotFoundException("No User Exist");
 
-		if (bCryptPasswordEncoder.matches(loginDTO.getPassword(), userCheck.getPassword())) {
-			String token = JwtToken.createJWT(userCheck.getUserId());
-			userRepository.save(userCheck);
-			return new LoginResponse("Hi " + userCheck.getFirstName(), token, HttpStatus.OK.value(),
-					"Login Successfully");
-		}
-
-		throw new UserException("Invalid Credential, Try Again!", HttpStatus.FORBIDDEN.value());
 	}
 
 }

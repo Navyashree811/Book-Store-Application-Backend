@@ -1,7 +1,5 @@
 package com.bridgelabz.bookstore.controller;
 
-import javax.validation.Valid;
-
 import com.bridgelabz.bookstore.dto.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -51,14 +49,14 @@ public class UserController {
 	}
 
 	@PostMapping("/forgotpassword")
-	public ResponseEntity<UserDetailsResponse> forgotPassword(@RequestBody @Valid ForgotPasswordDto emailId) {
+	public ResponseEntity<UserDetailsResponse> forgotPassword(@RequestBody ForgotPasswordDto emailId) {
 
 		UserDetailsResponse response = userService.forgetPassword(emailId);
 		return new ResponseEntity<UserDetailsResponse>(response, HttpStatus.OK);
 	}
 
 	@PutMapping("/resetpassword")
-	public ResponseEntity<Response> resetPassword(@RequestBody @Valid ResetPasswordDto resetPassword,
+	public ResponseEntity<Response> resetPassword(@RequestBody ResetPasswordDto resetPassword,
 			@RequestParam("token") String token) throws UserNotFoundException {
 
 		if (userService.resetPassword(resetPassword, token))
@@ -67,6 +65,15 @@ public class UserController {
 
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new Response(HttpStatus.BAD_REQUEST.value(),
 				"Password and Confirm Password doesn't matched please enter again"));
+	}
+
+	@DeleteMapping("/deleteUser")
+	public ResponseEntity<Response> deleteUser(@RequestHeader("token") String token) throws UserNotFoundException {
+
+		userService.deleteUser(token);
+		return ResponseEntity.status(HttpStatus.OK)
+				.body(new Response(HttpStatus.OK.value(), "User Delete Successfully"));
+
 	}
 
 }

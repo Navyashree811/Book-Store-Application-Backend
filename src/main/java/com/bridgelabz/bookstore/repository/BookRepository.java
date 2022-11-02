@@ -20,4 +20,6 @@ public interface BookRepository extends JpaRepository<BookModel, Long> {
 	@Transactional
 	@Query(value = "UPDATE bookstore.book SET price =:price WHERE book_id =:bookId", nativeQuery = true)
 	Integer changeBookPrice(Long bookId, Double price);
+
+	BookModel findByBookId(Long bookId);
 }

@@ -21,10 +21,10 @@ public class CartController {
 	private ICartService cartService;
 
 //	"Add Books to Cart"
-	@PostMapping("/AddToCart/{bookId}")
-	public ResponseEntity<Response> AddToCart(@RequestBody CartDto cartDto, @PathVariable Long bookId,
-			@RequestHeader("token") String token) throws BookException {
-		Response response = cartService.addToCart(cartDto, bookId, token);
+	@PostMapping("/AddToCart")
+	public ResponseEntity<Response> AddToCart(@RequestBody CartDto cartDto, @RequestHeader("token") String token)
+			throws BookException, Exception {
+		Response response = cartService.addToCart(cartDto, token);
 		return new ResponseEntity<Response>(response, HttpStatus.OK);
 	}
 

@@ -22,11 +22,22 @@ public interface CartRepository extends JpaRepository<CartModel, Long> {
 	@Query(value = "select * from Cart where book_id=? and user_id=?", nativeQuery = true)
 	Optional<CartModel> findByBookIdAndUserId(Long book_id, Long user_id);
 
-	List<CartModel> findAllByUserId(long id);
+	@Query(value = "SELECT cart_id,quantity,total_price,book_id,user_id FROM bookstore.cart where user_id=:id", nativeQuery = true)
+	List<CartModel> getAllByUserId(long id);
 
 	@Modifying(clearAutomatically = true)
 	@Transactional
-	@Query(value = "UPDATE bookstore.cart SET quantity=:quantity  WHERE id =:cartId", nativeQuery = true)
+	@Query(value = "UPDATE bookstore.cart SET quantity=:quantity  WHERE cart_id =:cartId", nativeQuery = true)
 	Integer updateQuantity(int quantity, Long cartId);
+
+	@Modifying(clearAutomatically = true)
+	@Transactional
+	@Query(value = "delete from bookstore.cart where cart_id=:cartId", nativeQuery = true)
+	Integer removeFromCart(Long cartId);
+
+	@Modifying(clearAutomatically = true)
+	@Transactional
+	@Query(value = "delete from bookstore.cart where user_id=:cartId", nativeQuery = true)
+	Integer deleteAllByUser(Long cartId);
 
 }

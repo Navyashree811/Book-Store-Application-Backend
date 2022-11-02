@@ -10,7 +10,9 @@ import org.springframework.stereotype.Service;
 import com.bridgelabz.bookstore.dto.BookDto;
 import com.bridgelabz.bookstore.exception.UserException;
 import com.bridgelabz.bookstore.model.BookModel;
+import com.bridgelabz.bookstore.model.UserModel;
 import com.bridgelabz.bookstore.repository.BookRepository;
+import com.bridgelabz.bookstore.repository.UserRepository;
 import com.bridgelabz.bookstore.response.Response;
 import com.bridgelabz.bookstore.utility.JwtToken;
 
@@ -25,14 +27,19 @@ public class BookService implements IBookService {
 	@Autowired
 	JwtToken jwtop;
 
+	@Autowired
+	UserRepository userRepository;
+
 	@Override
 
 	public Response addBook(BookDto newBook, String token) throws UserException {
 
+		long id = JwtToken.decodeJWT(token);
 		BookModel book = new BookModel();
 		BeanUtils.copyProperties(newBook, book);
-		bookRepository.save(book);
-		return new Response("Book is added successfully but need to verified", HttpStatus.OK.value(), book);
+		BookModel model = bookRepository.save(book);
+
+		return new Response("Book is added successfully !", HttpStatus.OK.value(), book);
 
 	}
 
@@ -51,7 +58,6 @@ public class BookService implements IBookService {
 	public Response deleteBook(String token, Long bookId) {
 		JwtToken.decodeJWT(token);
 		bookRepository.deleteById(bookId);
-		// elasticSearchService.deleteNote(bookId);
 		return new Response(HttpStatus.OK.value(), "Book deleted Successfully ");
 
 	}

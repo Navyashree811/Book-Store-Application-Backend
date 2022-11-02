@@ -11,8 +11,14 @@ import org.springframework.stereotype.Service;
 
 import com.bridgelabz.bookstore.dto.CartDto;
 import com.bridgelabz.bookstore.exception.BookException;
+import com.bridgelabz.bookstore.exception.CartException;
+import com.bridgelabz.bookstore.exception.UserException;
+import com.bridgelabz.bookstore.model.BookModel;
 import com.bridgelabz.bookstore.model.CartModel;
+import com.bridgelabz.bookstore.model.UserModel;
+import com.bridgelabz.bookstore.repository.BookRepository;
 import com.bridgelabz.bookstore.repository.CartRepository;
+import com.bridgelabz.bookstore.repository.UserRepository;
 import com.bridgelabz.bookstore.response.Response;
 import com.bridgelabz.bookstore.utility.EmailSenderService;
 import com.bridgelabz.bookstore.utility.JwtToken;
@@ -20,6 +26,11 @@ import com.bridgelabz.bookstore.utility.JwtToken;
 @Service
 public class CartService implements ICartService {
 
+	@Autowired
+	private BookRepository bookRepository;
+
+	@Autowired
+	private UserRepository userRepository;
 	@Autowired
 	private CartRepository cartRepository;
 
@@ -30,23 +41,38 @@ public class CartService implements ICartService {
 	EmailSenderService emailSender;
 
 	@Override
-	public Response addToCart(CartDto cartDto, Long bookId, String token) {
+	public Response addToCart(CartDto cartDto, String token) throws Exception {
 		long id = JwtToken.decodeJWT(token);
-		Optional<CartModel> book = cartRepository.findByBookIdAndUserId(bookId, id);
-		if (book.isPresent()) {
-			cartRepository.delete(book.get());
-			BeanUtils.copyProperties(cartDto, book.get());
-			book.get().setUserId(id);
-			cartRepository.save(book.get());
-		} else {
-			CartModel cartModel = new CartModel();
-			BeanUtils.copyProperties(cartDto, cartModel);
-			cartModel.setUserId(id);
-			cartModel.setBookId(bookId);
-			cartRepository.save(cartModel);
-		}
-		return new Response("Book Added to Cart Successfully", HttpStatus.OK.value(), id);
+//		Optional<CartModel> cart = cartRepository.findByBookIdAndUserId(cartDto.getBookId(), id);
+		Optional<CartModel> cart = cartRepository.findById(cartDto.getBookId());
+		Optional<UserModel> user = userRepository.findById(cartDto.getUserId());
+		Optional<BookModel> book = bookRepository.findById(cartDto.getBookId());
+		if (user.isPresent()) {
+			if (book.isEmpty()) {
+				throw new CartException("Book Not Available", HttpStatus.FORBIDDEN.value());
+			}
 
+			if (cart.isPresent()) {
+				throw new CartException("Book Alreay Added in cart", HttpStatus.FORBIDDEN.value());
+
+			} else {
+
+				CartModel cartModel = new CartModel();
+
+				BeanUtils.copyProperties(cartDto, cartModel);
+				cartModel.setUser(user.get());
+				cartModel.setBook(book.get());
+
+				BookModel bookModel = bookRepository.findByBookId(cartDto.getBookId());
+				cartModel.setTotalPrice(bookModel.getPrice() * cartDto.getQuantity());
+
+				cartRepository.save(cartModel);
+
+			}
+			return new Response("Book Added to Cart Successfully", HttpStatus.OK.value(), id);
+
+		} else
+			throw new UserException("User does not exists", HttpStatus.FORBIDDEN.value());
 	}
 
 	@Override
@@ -54,13 +80,9 @@ public class CartService implements ICartService {
 
 		CartModel cartModel = cartRepository.findByBookId(cartId)
 				.orElseThrow(() -> new BookException("Book is Not Added To Cart", HttpStatus.NOT_FOUND.value()));
-		int quantity = cartModel.getQuantity();
 
-		cartModel.setTotalPrice(cartModel.getTotalPrice() * (quantity - 1) / quantity);
-		quantity--;
-		cartModel.setQuantity(quantity);
-		cartRepository.save(cartModel);
-		return new Response("One Quantity Removed Successfully", HttpStatus.OK.value(), cartModel);
+		cartRepository.removeFromCart(cartId);
+		return new Response("One Item Removed Successfully", HttpStatus.OK.value(), cartModel);
 	}
 
 	@Override
@@ -74,7 +96,7 @@ public class CartService implements ICartService {
 	public List<CartModel> getAllCartItemsForUser(String token) {
 		long id = JwtToken.decodeJWT(token);
 		System.out.println("id" + id);
-		List<CartModel> items = cartRepository.findAllByUserId(id);
+		List<CartModel> items = cartRepository.getAllByUserId(id);
 		return items;
 	}
 
